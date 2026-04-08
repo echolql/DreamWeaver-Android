@@ -17,3 +17,4 @@ android/local.properties
 firebase-applet-config.json
 android/keystore.properties
 android/app/google-services.json
+android/app/dream-upload-key.keystore
