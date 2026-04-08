@@ -1,0 +1,7 @@
+{
+  "name": "DreamWeaver",
+  "description": "An AI-powered magical bedtime story generator for children, featuring personalized stories, custom illustrations, and soothing narration.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}

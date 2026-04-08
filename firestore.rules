@@ -1,0 +1,109 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: stories
+    // Document ID: {storyId}
+    // Fields:
+    //   - userId: string (required) - The UID of the user who created the story.
+    //   - title: string (required, max 100 chars) - The title of the story.
+    //   - content: string (required, max 2000 chars) - The text content of the story.
+    //   - theme: string (required, max 100 chars) - The theme of the story.
+    //   - character: string (required, max 100 chars) - The main character of the story.
+    //   - language: string (required, max 50 chars) - The language the story is written in.
+    //   - mode: string (required, enum: ['story', 'story_image']) - The generation mode.
+    //   - imageUrl: string (optional, URL format) - The URL of the generated illustration.
+    //   - audioUrl: string (optional, URL format) - The URL of the generated narration.
+    //   - createdAt: number (required) - The timestamp when the story was created.
+    //
+    // Collection: users
+    // Document ID: {userId}
+    // Fields:
+    //   - uid: string (required) - The UID of the user.
+    //   - email: string (required, email format) - The user's email address.
+    //   - displayName: string (required, max 100 chars) - The user's display name.
+    //   - createdAt: number (required) - The timestamp when the profile was created.
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isDocOwner() {
+      return isAuthenticated() && request.auth.uid == resource.data.userId;
+    }
+
+    function hasRequiredFields(fields) {
+      return request.resource.data.keys().hasAll(fields);
+    }
+
+    function hasOnlyAllowedFields(fields) {
+      return request.resource.data.keys().hasOnly(fields);
+    }
+
+    function isValidEmail(email) {
+      return email is string && email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    }
+
+    function isValidUrl(url) {
+      return url is string && (url.matches("^https://.*") || url.matches("^http://.*"));
+    }
+
+    // ===============================================================
+    // Domain Validators
+    // ===============================================================
+
+    function isValidStory(data) {
+      return hasRequiredFields(['userId', 'title', 'content', 'theme', 'character', 'language', 'mode', 'createdAt']) &&
+             hasOnlyAllowedFields(['userId', 'title', 'content', 'theme', 'character', 'language', 'mode', 'imageUrl', 'audioUrl', 'createdAt']) &&
+             data.userId == request.auth.uid &&
+             data.title is string && data.title.size() <= 100 &&
+             data.content is string && data.content.size() <= 2000 &&
+             data.theme is string && data.theme.size() <= 100 &&
+             data.character is string && data.character.size() <= 100 &&
+             data.language is string && data.language.size() <= 50 &&
+             data.mode in ['story', 'story_image'] &&
+             (!('imageUrl' in data) || isValidUrl(data.imageUrl)) &&
+             (!('audioUrl' in data) || isValidUrl(data.audioUrl)) &&
+             data.createdAt is number;
+    }
+
+    function isValidUserProfile(data) {
+      return hasRequiredFields(['uid', 'email', 'displayName', 'createdAt']) &&
+             hasOnlyAllowedFields(['uid', 'email', 'displayName', 'createdAt']) &&
+             data.uid == request.auth.uid &&
+             isValidEmail(data.email) &&
+             data.displayName is string && data.displayName.size() <= 100 &&
+             data.createdAt is number;
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /stories/{storyId} {
+      allow read: if isDocOwner();
+      allow create: if isAuthenticated() && isValidStory(request.resource.data);
+      allow update: if isDocOwner() && isValidStory(request.resource.data);
+      allow delete: if isDocOwner();
+    }
+
+    match /users/{userId} {
+      allow read: if isOwner(userId);
+      allow create: if isAuthenticated() && isValidUserProfile(request.resource.data);
+      allow update: if isOwner(userId) && isValidUserProfile(request.resource.data);
+    }
+  }
+}

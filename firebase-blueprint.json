@@ -1,0 +1,44 @@
+{
+  "entities": {
+    "Story": {
+      "title": "Story",
+      "description": "A generated bedtime story.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "The UID of the user who created the story." },
+        "title": { "type": "string", "description": "The title of the story." },
+        "content": { "type": "string", "description": "The text content of the story." },
+        "theme": { "type": "string", "description": "The theme of the story." },
+        "character": { "type": "string", "description": "The main character of the story." },
+        "language": { "type": "string", "description": "The language the story is written in." },
+        "mode": { "type": "string", "enum": ["story", "story_image"], "description": "The generation mode." },
+        "imageUrl": { "type": "string", "format": "uri", "description": "The URL of the generated illustration." },
+        "audioUrl": { "type": "string", "format": "uri", "description": "The URL of the generated narration." },
+        "createdAt": { "type": "number", "description": "The timestamp when the story was created." }
+      },
+      "required": ["userId", "title", "content", "theme", "character", "language", "mode", "createdAt"]
+    },
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User profile information.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "The UID of the user." },
+        "email": { "type": "string", "format": "email", "description": "The user's email address." },
+        "displayName": { "type": "string", "description": "The user's display name." },
+        "createdAt": { "type": "number", "description": "The timestamp when the profile was created." }
+      },
+      "required": ["uid", "email", "displayName", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/stories/{storyId}": {
+      "schema": "Story",
+      "description": "A collection of bedtime stories."
+    },
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "User profile documents."
+    }
+  }
+}
