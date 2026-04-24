@@ -1,62 +1,33 @@
 Privacy Policy
 
-Last Updated: April 7, 2026
+Last Updated: April 24, 2026
 
-I (Qingli Li) operates the DreamWeaver mobile application. This page informs you of my policies regarding the collection, use, and disclosure of personal data when you use my Service and the choices you have associated with that data.
+# Privacy Policy
 
-I built the DreamWeaver app as a Paid service. This Service is intended for use by parents and children and is provided by Qingli Li for use as is.
+This Privacy Policy describes how your personal information is collected, used, and shared when you use the DreamWeaver-Android application (the "App").
 
-1. Children’s Privacy (COPPA & GDPR-K Compliance)
-Protecting the privacy of young children is my highest priority. DreamWeaver is designed to be a safe environment for families.
+## 1. Information Collection and Use
+For a better experience, while using our Service, we may require you to provide us with certain personally identifiable information. The information that we request will be retained on your device and is not collected by us in any way.
 
-No Personal Data Collection: I do not knowingly collect, store, or share any personally identifiable information (PII) from children under the age of 13.
+## 2. Children’s Privacy
+**This App does not address anyone under the age of 13. We do not knowingly collect personally identifiable information from children under 13.**
 
-Parental Involvement: The app is intended to be used by parents or with parental supervision. I do not require children to create accounts or provide names, emails, or addresses.
+In the case we discover that a child under 13 has provided us with personal information, we immediately delete this from our servers. If you are a parent or guardian and you become aware that your child has provided us with personal information, please contact us so that we will be able to take the necessary actions and **delete that information immediately upon request.**
 
-Contact: If you believe I have inadvertently collected information from a child under 13, please contact me immediately at echolql@gmail.com, and I will delete such information from my records.
+## 3. Third-Party Services
+The app does use third-party services that may collect information used to identify you.
 
-2. Information Collection and Use
-To provide the story generation service, the app handles data in the following ways:
+Google Gemini: https://support.google.com/gemini/answer/13594961
+Firebase: https://firebase.google.com/support/privacy
+Google Play Services: https://policies.google.com/privacy
 
-Story Inputs: Any themes, characters, or prompts entered to generate a bedtime story are used in real-time to facilitate the AI generation process. These inputs are not linked to your identity and are not stored permanently by me.
+## 4. Security
+We value your trust in providing us your Personal Information, thus we are striving to use commercially acceptable means of protecting it. But remember that no method of transmission over the internet, or method of electronic storage is 100% secure and reliable, and we cannot guarantee its absolute security.
 
-Purchase Information: Because this is a Paid Service, transactions are handled by the Google Play Store. I do not have access to your credit card or banking details. I only receive confirmation of a successful purchase to grant access to the app.
+## 5. Changes to This Privacy Policy
+We may update our Privacy Policy from time to time. Thus, you are advised to review this page periodically for any changes. We will notify you of any changes by posting the new Privacy Policy on this page.
 
-Technical Data: I may collect limited, non-identifying technical data (such as device model, OS version, and crash logs) solely to improve app performance and fix bugs.
+## 6. Contact Us
+If you have any questions or suggestions about our Privacy Policy, or to request the removal of data provided by a minor, do not hesitate to contact us.
 
-3. Generative AI Disclosure
-This app uses Google AI to generate story content.
-
-No personally identifiable information is sent to the AI provider.
-
-I have implemented filters to ensure the content generated is age-appropriate; however, parents are encouraged to review stories with their children.
-
-4. Service Providers
-I may employ third-party companies and individuals due to the following reasons:
-
-To facilitate our Service;
-
-To provide the Service on our behalf;
-
-To perform Service-related services; or
-
-To assist us in analyzing how our Service is used.
-
-These third parties have access to your Personal Information only to perform these tasks on our behalf and are obligated not to disclose or use it for any other purpose. All SDKs used in this app are compliant with Google Play’s Families Policy.
-
-5. Ads and Analytics
-No Behavioral Ads: This app does not contain interest-based advertising or remarketing.
-
-Privacy-First Analytics: If analytics are used, they are configured to exclude the collection of Android Advertising IDs, ensuring compliance with children's privacy standards.
-
-6. Security
-I value your trust in purchasing this app. I use commercially acceptable means of protecting your data. However, please remember that no method of transmission over the internet or electronic storage is 100% secure.
-
-7. Changes to This Privacy Policy
-I may update my Privacy Policy from time to time. You are advised to review this page periodically for any changes. I will notify you of any changes by posting the new Privacy Policy on this page and updating the "Last Updated" date.
-
-8. Contact Me
-If you have any questions or suggestions about my Privacy Policy, do not hesitate to contact me:
-
-- By email: echolql@gmail.com
-16439 se 46ct, Bellevue, wa, 98006
+echolql@gmail.com
