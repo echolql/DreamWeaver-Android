@@ -15,12 +15,12 @@ export interface GeneratedStory {
 
 export async function generateStory(theme: string, character: string, language: string): Promise<GeneratedStory> {
   const ai = getAI();
-  const prompt = `Please generate kids friendly bedtime story based on following:
+  const prompt = `Please generate a story based on following:
   Theme: ${theme}. 
   Main Character: ${character}. 
   Language: ${language}. 
   Length: 200-300 words. 
-  The story should be gentle, whimsical, and perfect for bedtime.
+  The story should be engaging and creative.
   Format the response as JSON with 'title' and 'content' fields.`;
 
   try {
@@ -51,8 +51,8 @@ export async function generateStory(theme: string, character: string, language: 
 
 export async function checkSafety(content: string): Promise<{ isSafe: boolean, reason?: string }> {
   const ai = getAI();
-  const prompt = `Analyze the following content for a children's bedtime story app. 
-  Check if it contains inappropriate content for kids, such as sex, extreme violence, hate speech, or explicit language.
+  const prompt = `Analyze the following content for a story generation app. 
+  Check if it contains highly inappropriate content such as sex, extreme graphic violence, hate speech, or explicit language.
   Content: "${content}"
   
   Respond ONLY with a JSON object: {"isSafe": boolean, "reason": "short explanation if unsafe"}`;
@@ -75,9 +75,58 @@ export async function checkSafety(content: string): Promise<{ isSafe: boolean, r
   }
 }
 
-export async function generateImage(character: string, theme: string, style: string = 'watercolor'): Promise<string> {
+async function retryWithBackoffAndJitter<T>(
+  operation: () => Promise<T>,
+  maxRetries = 3,
+  onRetry?: (attempt: number) => void
+): Promise<T> {
+  let attempt = 0;
+  while (attempt <= maxRetries) {
+    try {
+      return await operation();
+    } catch (err: any) {
+      attempt++;
+      // Check for 503 Service Unavailable, 500 Internal Server Error,
+      // or connection errors that can be retried. The Gemini JS SDK may
+      // re-throw 503s as specific error types or as generic Errors with
+      // message content. Here, we parse the message.
+      const shouldRetry =
+        err.message?.includes('503') ||
+        err.message?.includes('500') ||
+        err.message?.includes('UnknownHostException') ||
+        err.message?.includes('network') ||
+        err.status === 503 || // Some errors might have a status field
+        err.status === 500;
+
+      if (!shouldRetry || attempt > maxRetries) {
+        throw err; // Not a retriable error, or all attempts spent
+      }
+
+      // Exponential backoff: 1s, 2s, 4s
+      const delayMs = Math.pow(2, attempt - 1) * 1000;
+      // Add +/- 200ms jitter
+      const jitterMs = (Math.random() - 0.5) * 400;
+      const finalDelayMs = Math.max(0, delayMs + jitterMs); // Ensure non-negative delay
+
+      console.warn(
+        `Gemini attempt ${attempt} failed, retrying in ${finalDelayMs}ms...`
+      );
+      if (onRetry) onRetry(attempt);
+      await new Promise(resolve => setTimeout(resolve, finalDelayMs));
+    }
+  }
+  // This point should not be reachable due to the throw inside the loop
+  throw new Error("Max retries reached.");
+}
+
+export async function generateImage(
+  character: string,
+  theme: string,
+  style: string = 'watercolor',
+  onRetry?: (attempt: number) => void
+): Promise<string> {
   const ai = getAI();
-  
+
   const stylePrompts: Record<string, string> = {
     watercolor: "A gentle, whimsical watercolor and papercraft illustration for a children's book. Soft pastel colors, hand-drawn textures.",
     pixel_art: "Charming pixel art illustration for a children's book. Vibrant 8-bit colors, retro game aesthetic, friendly characters.",
@@ -95,42 +144,47 @@ export async function generateImage(character: string, theme: string, style: str
   No text, no realistic faces, just pure artistic imagination.`;
 
   try {
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash-image',
-      contents: {
-        parts: [
-          {
-            text: prompt,
+    const base64EncodeString = await retryWithBackoffAndJitter(
+      async () => {
+        const response = await ai.models.generateContent({
+          model: 'gemini-2.5-flash-image',
+          contents: {
+            parts: [
+              {
+                text: prompt,
+              },
+            ],
           },
-        ],
+        });
+
+        console.log('Gemini Image Response:', response);
+
+        const candidates = response.candidates;
+        if (!candidates || candidates.length === 0 || !candidates[0].content || !candidates[0].content.parts) {
+          const finishReason = candidates?.[0]?.finishReason;
+          const safetyRatings = candidates?.[0]?.safetyRatings;
+          console.error('Image Generation Failed. Finish Reason:', finishReason, 'Safety Ratings:', safetyRatings);
+
+          let userMessage = "The AI painter was unable to create an image this time.";
+          if (finishReason === 'PROHIBITED_CONTENT' || finishReason === 'SAFETY') {
+            userMessage = "The AI painter couldn't draw this specific character or theme due to safety/copyright rules. Try using a more general description (like 'a brave lion' instead of a specific name)!";
+          } else {
+            userMessage += ` (Reason: ${finishReason || 'Unknown'}). Please try a different theme!`;
+          }
+          throw new Error(userMessage);
+        }
+
+        const firstInlineData = candidates[0].content.parts.find(part => part.inlineData)?.inlineData;
+        if (!firstInlineData) throw new Error("No image data returned from Gemini.");
+        
+        return firstInlineData.data;
       },
-    });
+      3, // 3 retries = 4 attempts total
+      onRetry
+    );
 
-    console.log('Gemini Image Response:', response);
+    return `data:image/png;base64,${base64EncodeString}`;
 
-    const candidates = response.candidates;
-    if (!candidates || candidates.length === 0 || !candidates[0].content || !candidates[0].content.parts) {
-      const finishReason = candidates?.[0]?.finishReason;
-      const safetyRatings = candidates?.[0]?.safetyRatings;
-      console.error('Image Generation Failed. Finish Reason:', finishReason, 'Safety Ratings:', safetyRatings);
-      
-      let userMessage = "The AI painter was unable to create an image this time.";
-      if (finishReason === 'PROHIBITED_CONTENT' || finishReason === 'SAFETY') {
-        userMessage = "The AI painter couldn't draw this specific character or theme due to safety/copyright rules. Try using a more general description (like 'a brave lion' instead of a specific name)!";
-      } else {
-        userMessage += ` (Reason: ${finishReason || 'Unknown'}). Please try a different theme!`;
-      }
-      
-      throw new Error(userMessage);
-    }
-
-    for (const part of candidates[0].content.parts) {
-      if (part.inlineData) {
-        const base64EncodeString: string = part.inlineData.data;
-        return `data:image/png;base64,${base64EncodeString}`;
-      }
-    }
-    throw new Error("No image data returned from Gemini.");
   } catch (err: any) {
     console.error('Gemini Image Error:', err);
     throw err;

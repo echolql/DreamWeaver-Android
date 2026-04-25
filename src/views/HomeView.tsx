@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'motion/react';
-import { Sparkles, Library, PlusCircle, Star, Moon, CloudMoon, CreditCard } from 'lucide-react';
+import { Sparkles, Library, PlusCircle, Star, Moon, Wand2, CreditCard } from 'lucide-react';
 import { UserCredits } from '../services/paymentsService';
 
 interface HomeViewProps {
@@ -25,12 +25,27 @@ export function HomeView({ onStart, onViewLibrary, credits, onShowPaywall }: Hom
         <motion.div
           animate={{ y: [0, -10, 0] }}
           transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+          className="relative"
         >
-          <CloudMoon className="w-32 h-32 text-gold mx-auto mb-6 drop-shadow-[0_0_15px_rgba(212,175,55,0.4)]" />
+          <Wand2 className="w-32 h-32 text-gold mx-auto mb-6 drop-shadow-[0_0_15px_rgba(212,175,55,0.4)]" />
+          <motion.div
+            animate={{ opacity: [0, 1, 0], scale: [0.5, 1.2, 0.5] }}
+            transition={{ duration: 2, repeat: Infinity, delay: 0.5 }}
+            className="absolute -top-4 -right-4"
+          >
+            <Sparkles className="w-8 h-8 text-gold-light" />
+          </motion.div>
+          <motion.div
+            animate={{ opacity: [0, 1, 0], scale: [0.5, 1, 0.5] }}
+            transition={{ duration: 3, repeat: Infinity, delay: 1 }}
+            className="absolute top-10 -left-6"
+          >
+            <Star className="w-6 h-6 text-gold/60" />
+          </motion.div>
         </motion.div>
         
         <p className="text-xl md:text-2xl text-gold-light/80 max-w-2xl mx-auto italic magical-text">
-          Create personalized, magical bedtime stories for your little ones with the power of AI.
+          Unleash your imagination and create custom stories brought to life by AI.
         </p>
       </motion.div>
 

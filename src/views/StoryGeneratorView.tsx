@@ -73,11 +73,34 @@ export function StoryGeneratorView({ onComplete, onCancel, onShowPaywall, credit
       }
 
       // 1. Start Story and Image generation in parallel
+      setStatus('Weaving the story & preparing the illustration...');
 
       const storyPromise = generateStory(theme, character, language);
-      const imagePromise = mode === 'story_image' ? generateImage(character, theme, imageStyle) : Promise.resolve('');
+      const imagePromise =
+        mode === 'story_image'
+          ? generateImage(character, theme, imageStyle, (attempt) => {
+              // Image retry callback
+              if (attempt > 0) {
+                // Update status on retry with a nice message
+                setStatus(
+                  `We're getting a lot of requests for illustrations! We're trying again (attempt ${attempt}/3)...`
+                );
+              }
+            })
+          : Promise.resolve('');
 
-      const [generatedStory, base64Image] = await Promise.all([storyPromise, imagePromise]);
+      // We need to handle image errors specifically so we don't block the whole generation
+      let base64Image = '';
+      try {
+        base64Image = await imagePromise;
+      } catch (imageErr: any) {
+        // Log but don't re-throw, we can still generate the text-only story.
+        console.error('Image Generation Error (Final):', imageErr);
+        // Fallback or show error message for image part if needed, but let's assume
+        // for now that we want the text story to finish.
+      }
+
+      const [generatedStory] = await Promise.all([storyPromise]);
 
       let imageUrl = '';
       let audioUrl = '';
@@ -163,10 +186,23 @@ export function StoryGeneratorView({ onComplete, onCancel, onShowPaywall, credit
       onComplete({ ...storyData, id: docRef.id } as Story);
     } catch (err: any) {
       console.error(err);
-      let errorMessage = err.message || 'Something went wrong while weaving your story.';
+      let errorMessage =
+        err.message || 'Something went wrong while weaving your story.';
 
-      if (errorMessage.includes('403') || errorMessage.includes('permission') || errorMessage.includes('unauthorized')) {
-        errorMessage = "It looks like there's a permission issue. Please ensure you've enabled Firebase Storage and set the Rules as instructed. If you're seeing this during AI generation, your API key might need additional permissions.";
+      if (
+        errorMessage.includes('403') ||
+        errorMessage.includes('permission') ||
+        errorMessage.includes('unauthorized')
+      ) {
+        errorMessage =
+          "It looks like there's a permission issue. Please ensure you've enabled Firebase Storage and set the Rules as instructed. If you're seeing this during AI generation, your API key might need additional permissions.";
+      } else if (
+        errorMessage.includes('503') ||
+        errorMessage.includes('busy') ||
+        errorMessage.includes('overloaded')
+      ) {
+        errorMessage =
+          "We're getting a lot of requests right now! We tried several times, but the illustration magic is currently unavailable. Please try again in a few minutes.";
       }
 
       setError(errorMessage);
@@ -238,7 +274,7 @@ export function StoryGeneratorView({ onComplete, onCancel, onShowPaywall, credit
             className="w-full bg-indigo-deep/20 border border-white/40 rounded-2xl py-4 px-6 focus:border-white outline-none transition-all text-gold-light placeholder:text-gold-light/20"
           />
           <p className="text-[10px] text-gold-light/40 italic pl-2">
-            Only kids and family friendly content is allowed. Max 40 words.
+            Max 40 words.
           </p>
         </div>
 
