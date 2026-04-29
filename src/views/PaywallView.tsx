@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Sparkles, CreditCard, Loader2, X, CheckCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { MAGIC_PACKS, getUserCredits, createCheckoutSession } from '../services/paymentsService';
+import { MAGIC_PACKS, getUserCredits, purchaseCredits } from '../services/paymentsService';
 import { useAuth } from '../AuthProvider';
 
 interface PaywallViewProps {
@@ -15,7 +15,6 @@ export function PaywallView({ onDismiss, onPurchaseSuccess }: PaywallViewProps) 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [purchasing, setPurchasing] = useState<string | null>(null);
-  const [showSuccess, setShowSuccess] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -25,19 +24,15 @@ export function PaywallView({ onDismiss, onPurchaseSuccess }: PaywallViewProps) 
       .finally(() => setLoading(false));
   }, [user]);
 
-  const handleBuy = async (priceId: string) => {
+  const handleBuy = async (productId: string) => {
     if (!user) return;
-    setPurchasing(priceId);
+    setPurchasing(productId);
     setError('');
     try {
-      const session = await createCheckoutSession(user.uid, priceId);
-      // Open Stripe Checkout in the browser / external browser
-      window.location.href = session.url;
-      // After redirecting to Stripe, user will come back via deep link.
-      // We close the paywall and wait for the deep link to refresh credits.
-      onDismiss();
+      await purchaseCredits(productId, user.uid);
+      onPurchaseSuccess();
     } catch (err: any) {
-      setError(err.message || 'Failed to start purchase');
+      setError(err.message || 'Purchase failed');
       setPurchasing(null);
     }
   };
@@ -100,7 +95,7 @@ export function PaywallView({ onDismiss, onPurchaseSuccess }: PaywallViewProps) 
       <div className="space-y-4">
         {MAGIC_PACKS.map((pack) => (
           <motion.div
-            key={pack.priceId}
+            key={pack.productId}
             whileHover={{ scale: 1.01 }}
             whileTap={{ scale: 0.99 }}
             className="bg-indigo-deep/20 border border-white/10 rounded-2xl p-5 flex items-center justify-between"
@@ -113,11 +108,11 @@ export function PaywallView({ onDismiss, onPurchaseSuccess }: PaywallViewProps) 
               </p>
             </div>
             <button
-              onClick={() => handleBuy(pack.priceId)}
+              onClick={() => handleBuy(pack.productId)}
               disabled={purchasing !== null}
               className="bg-gold hover:bg-gold-light text-midnight font-bubblegum px-6 py-3 rounded-xl transition-all flex items-center gap-2 disabled:opacity-50"
             >
-              {purchasing === pack.priceId ? (
+              {purchasing === pack.productId ? (
                 <Loader2 className="w-5 h-5 animate-spin" />
               ) : (
                 <>
@@ -131,7 +126,7 @@ export function PaywallView({ onDismiss, onPurchaseSuccess }: PaywallViewProps) 
       </div>
 
       <p className="text-center text-gold-light/30 text-xs mt-8">
-        🔒 Payments powered by Stripe. Your card details are never stored.
+        🔒 Payments powered by Google Play. Your card details are never stored.
       </p>
     </div>
   );

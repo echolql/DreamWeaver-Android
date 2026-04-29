@@ -1,0 +1,11 @@
+{
+  "appId": "com.echolql.dreamweaver",
+  "appName": "DreamWeaver",
+  "webDir": "dist",
+  "bundledWebRuntime": false,
+  "plugins": {
+    "CapacitorHttp": {
+      "enabled": true
+    }
+  }
+}

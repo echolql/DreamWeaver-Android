@@ -12,7 +12,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Sparkles, Library, PlusCircle, LogOut, User as UserIcon } from 'lucide-react';
 import { auth } from './firebase';
 import { signOut } from 'firebase/auth';
-import { getCheckoutSession, getUserCredits, UserCredits } from './services/paymentsService';
+import { getUserCredits, UserCredits } from './services/paymentsService';
 
 type View = 'home' | 'generator' | 'library' | 'detail' | 'me';
 
@@ -47,42 +47,11 @@ function AppContent() {
   useEffect(() => {
     reloadCredits();
 
-    // Refresh credits when user returns to the app (e.g. from Stripe browser)
+    // Refresh credits when user returns to the app
     const handleFocus = () => reloadCredits();
     window.addEventListener('focus', handleFocus);
     return () => window.removeEventListener('focus', handleFocus);
   }, [user]);
-
-  // Handle deep link: storytime://payment/success?session_id=...
-  useEffect(() => {
-    const handleDeepLink = () => {
-      const url = window.location.href;
-      if (url.includes('storytime://payment/success')) {
-        const params = new URLSearchParams(url.split('?')[1] || '');
-        const sessionId = params.get('session_id');
-        if (sessionId) {
-          // Verify the payment was successful
-          getCheckoutSession(sessionId)
-            .then(status => {
-              if (status.paymentStatus === 'paid') {
-                // Payment confirmed — close paywall if open
-                setShowPaywall(false);
-                // Start polling for credit increase (5 retries = 10 seconds total)
-                reloadCredits(5);
-              }
-            })
-            .catch(console.error);
-        }
-      }
-    };
-
-    // Check on load (Capacitor apps may launch with deep link as initial URL)
-    handleDeepLink();
-
-    // Also listen for popstate (for web app navigation)
-    window.addEventListener('popstate', handleDeepLink);
-    return () => window.removeEventListener('popstate', handleDeepLink);
-  }, []);
 
   if (loading) {
     return (
