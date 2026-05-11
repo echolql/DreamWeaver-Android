@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { auth, db } from './firebase';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, onSnapshot, getDoc, setDoc } from 'firebase/firestore';
 import { UserProfile } from './types';
 import { OperationType, handleFirestoreError } from './firebase';
 
@@ -21,49 +21,52 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    let profileLoaded = false;
+    let profileUnsubscribe: (() => void) | null = null;
 
-    // Safety timeout: if Firebase doesn't respond in 10s, continue without auth
-    const timeoutId = setTimeout(() => {
-      if (!profileLoaded) {
-        console.warn('Firebase auth timed out — continuing without auth');
-        setLoading(false);
-      }
-    }, 10000);
-
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+    const authUnsubscribe = onAuthStateChanged(auth, async (user) => {
       setUser(user);
+
+      if (profileUnsubscribe) {
+        profileUnsubscribe();
+        profileUnsubscribe = null;
+      }
+
       if (user) {
         const profileRef = doc(db, 'users', user.uid);
-        try {
-          const profileSnap = await getDoc(profileRef);
-          if (profileSnap.exists()) {
-            setProfile(profileSnap.data() as UserProfile);
+
+        // Listen for profile changes
+        profileUnsubscribe = onSnapshot(profileRef, (snap) => {
+          if (snap.exists()) {
+            setProfile(snap.data() as UserProfile);
+            setLoading(false);
           } else {
+            // Create profile if it doesn't exist
             const newProfile: UserProfile = {
               uid: user.uid,
               email: user.email || '',
               displayName: user.displayName || 'Dreamer',
               createdAt: Date.now(),
             };
-            await setDoc(profileRef, newProfile);
-            setProfile(newProfile);
+            setDoc(profileRef, newProfile).catch(err => {
+              console.error('Error creating profile:', err);
+              handleFirestoreError(err, OperationType.WRITE, `users/${user.uid}`);
+            });
+            // onSnapshot will trigger again after setDoc
           }
-        } catch (error) {
-          console.error('Error loading profile:', error);
+        }, (error) => {
+          console.error('Error listening to profile:', error);
           handleFirestoreError(error, OperationType.GET, `users/${user.uid}`);
-        }
+          setLoading(false);
+        });
       } else {
         setProfile(null);
+        setLoading(false);
       }
-      profileLoaded = true;
-      clearTimeout(timeoutId);
-      setLoading(false);
     });
 
     return () => {
-      clearTimeout(timeoutId);
-      unsubscribe();
+      authUnsubscribe();
+      if (profileUnsubscribe) profileUnsubscribe();
     };
   }, []);
 

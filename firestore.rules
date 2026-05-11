@@ -53,10 +53,6 @@ service cloud.firestore {
       return request.resource.data.keys().hasOnly(fields);
     }
 
-    function isValidEmail(email) {
-      return email is string && email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
-    }
-
     function isValidUrl(url) {
       return url is string && (url.matches("^https://.*") || url.matches("^http://.*"));
     }
@@ -81,12 +77,13 @@ service cloud.firestore {
     }
 
     function isValidUserProfile(data) {
-      return hasRequiredFields(['uid', 'email', 'displayName', 'createdAt']) &&
-             hasOnlyAllowedFields(['uid', 'email', 'displayName', 'createdAt']) &&
-             data.uid == request.auth.uid &&
-             isValidEmail(data.email) &&
-             data.displayName is string && data.displayName.size() <= 100 &&
-             data.createdAt is number;
+      return data.uid == request.auth.uid &&
+             (!('email' in data) || (data.email is string && data.email.size() > 0)) &&
+             (!('displayName' in data) || (data.displayName is string && data.displayName.size() <= 100)) &&
+             (!('bio' in data) || (data.bio is string && data.bio.size() <= 500)) &&
+             (!('favoriteColor' in data) || (data.favoriteColor is string && data.favoriteColor.size() <= 50)) &&
+             (!('photoURL' in data) || (data.photoURL is string && data.photoURL.size() <= 500)) &&
+             (!('createdAt' in data) || data.createdAt is number);
     }
 
     // ===============================================================
@@ -104,6 +101,7 @@ service cloud.firestore {
       allow read: if isOwner(userId);
       allow create: if isAuthenticated() && isValidUserProfile(request.resource.data);
       allow update: if isOwner(userId) && isValidUserProfile(request.resource.data);
+      allow delete: if isOwner(userId);
     }
   }
 }

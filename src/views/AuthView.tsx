@@ -9,20 +9,29 @@ import {
 } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
 import { motion } from 'motion/react';
-import { Sparkles, Mail, Lock, User, LogIn, UserPlus } from 'lucide-react';
+import { Sparkles, Mail, Lock, User, LogIn, UserPlus, Eye, EyeOff } from 'lucide-react';
 import { cn } from '../lib/utils';
 
 export function AuthView() {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+
+    if (!isLogin && password !== confirmPassword) {
+      setError('Passwords do not match');
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -41,7 +50,18 @@ export function AuthView() {
         });
       }
     } catch (err: any) {
-      setError('Username or password is wrong');
+      console.error('Auth error:', err);
+      if (isLogin) {
+        setError('Username or password is wrong');
+      } else {
+        if (err.code === 'auth/email-already-in-use') {
+          setError('This email is already registered');
+        } else if (err.code === 'auth/weak-password') {
+          setError('Password should be at least 6 characters');
+        } else {
+          setError('Failed to create account. Please try again.');
+        }
+      }
     } finally {
       setLoading(false);
     }
@@ -95,14 +115,42 @@ export function AuthView() {
           <div className="relative">
             <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gold-light/40" />
             <input
-              type="password"
+              type={showPassword ? "text" : "password"}
               placeholder="Password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full bg-midnight/50 border border-gold/10 rounded-xl py-3 pl-10 pr-4 focus:border-gold/50 outline-none transition-all text-gold-light"
+              className="w-full bg-midnight/50 border border-gold/10 rounded-xl py-3 pl-10 pr-12 focus:border-gold/50 outline-none transition-all text-gold-light"
               required
             />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 p-1 hover:bg-gold/10 rounded-lg transition-colors text-gold-light/40 hover:text-gold"
+            >
+              {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+            </button>
           </div>
+
+          {!isLogin && (
+            <div className="relative">
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gold-light/40" />
+              <input
+                type={showConfirmPassword ? "text" : "password"}
+                placeholder="Confirm Password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                className="w-full bg-midnight/50 border border-gold/10 rounded-xl py-3 pl-10 pr-12 focus:border-gold/50 outline-none transition-all text-gold-light"
+                required
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 hover:bg-gold/10 rounded-lg transition-colors text-gold-light/40 hover:text-gold"
+              >
+                {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+              </button>
+            </div>
+          )}
 
           {error && <p className="text-red-400 text-sm text-center">{error}</p>}
 
@@ -126,7 +174,10 @@ export function AuthView() {
 
         <div className="mt-6 flex flex-col gap-4">
           <button
-            onClick={() => setIsLogin(!isLogin)}
+            onClick={() => {
+              setIsLogin(!isLogin);
+              setError('');
+            }}
             className="text-gold-light/60 hover:text-gold text-sm transition-colors text-center"
           >
             {isLogin ? "New here? Sign up for your first 5 stories free!" : "Already have an account? Log in"}

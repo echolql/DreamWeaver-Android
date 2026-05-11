@@ -133,15 +133,16 @@ export async function generateImage(
     '3d_render': "High-quality 3D render in the style of a modern animated movie. Soft studio lighting, expressive characters, whimsical atmosphere.",
     oil_painting: "A rich oil painting illustration with visible brushstrokes and texture. Classic storybook feel, warm lighting.",
     sketch: "A beautiful pencil and charcoal sketch illustration. Detailed hand-drawn textures, artistic and soulful.",
-    origami: "A diorama made of folded origami paper. Paper textures, handcrafted look, gentle shadows."
+    origami: "A diorama made of folded origami paper. Paper textures, handcrafted look, gentle shadows.",
+    photo_realistic: "A lifelike, highly detailed photographic masterpiece. Real-world lighting, professional cinematography, high resolution, vivid natural colors."
   };
 
   const styleBase = stylePrompts[style] || stylePrompts.watercolor;
 
   const prompt = `${styleBase} 
   The scene features a friendly character inspired by "${character}" in a magical world of "${theme}". 
-  Happy and safe atmosphere, magical bedtime story aesthetic. 
-  No text, no realistic faces, just pure artistic imagination.`;
+  Happy and safe atmosphere, ${style === 'photo_realistic' ? 'realistic cinematic lighting' : 'magical bedtime story aesthetic'}.
+  No text, ${style === 'photo_realistic' ? 'highly detailed and lifelike features' : 'no realistic faces, just pure artistic imagination'}.`;
 
   try {
     const base64EncodeString = await retryWithBackoffAndJitter(

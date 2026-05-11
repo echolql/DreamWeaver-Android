@@ -1,3 +1,6 @@
+import java.util.Properties
+import java.io.FileInputStream
+
 apply plugin: 'com.android.application'
 
 android {
@@ -7,8 +10,8 @@ android {
         applicationId "com.echolql.dreamweaver"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 12
-        versionName "test-1.12"
+        versionCode 13
+        versionName "test-1.13"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -17,27 +20,51 @@ android {
         }
     }
 
-    // 1. Load the properties file
+    // Load the properties file. 
+    // rootProject refers to the 'android' folder. 
+    // We look in 'android/keystore.properties' first, then one level up in the workspace root.
     def keystorePropertiesFile = rootProject.file("keystore.properties")
+    if (!keystorePropertiesFile.exists()) {
+        keystorePropertiesFile = new File(rootProject.projectDir.parentFile, "keystore.properties")
+    }
+
     def keystoreProperties = new Properties()
     if (keystorePropertiesFile.exists()) {
+        println "DEBUG: Loading keystore properties from: ${keystorePropertiesFile.absolutePath}"
         keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+    } else {
+        println "DEBUG: keystore.properties NOT FOUND in ${rootProject.file("keystore.properties").absolutePath} or ${new File(rootProject.projectDir.parentFile, "keystore.properties").absolutePath}"
     }
 
     signingConfigs {
         release {
-            // 2. Use the properties for the release config
-            storeFile = file(keystoreProperties['storeFile'])
-            storePassword = keystoreProperties['storePassword']
-            keyAlias = keystoreProperties['keyAlias']
-            keyPassword = keystoreProperties['keyPassword']
+            if (keystoreProperties.containsKey('storeFile')) {
+                def ksFilePath = keystoreProperties['storeFile']
+                def ksFile = file(ksFilePath)
+                if (ksFile.exists()) {
+                    storeFile = ksFile
+                    storePassword = keystoreProperties['storePassword']
+                    keyAlias = keystoreProperties['keyAlias']
+                    keyPassword = keystoreProperties['keyPassword']
+                    println "DEBUG: Signing config initialized for alias: ${keyAlias}"
+                } else {
+                    println "DEBUG: Keystore file NOT FOUND at: ${ksFile.absolutePath}"
+                }
+            } else {
+                println "DEBUG: 'storeFile' not found in keystore.properties"
+            }
         }
     }
 
     buildTypes {
         release {
-            // THIS LINE IS OFTEN MISSING:
-            signingConfig signingConfigs.release 
+            // Apply signing configuration if properties were found and file exists
+            if (keystoreProperties.containsKey('storeFile') && file(keystoreProperties['storeFile']).exists()) {
+                signingConfig signingConfigs.release
+                println "DEBUG: Release build will be SIGNED"
+            } else {
+                println "DEBUG: Release build will be UNSIGNED"
+            }
         
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
@@ -48,13 +75,6 @@ android {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
     }
-
-    //buildTypes {
-    //    release {
-    //        minifyEnabled false
-    //        proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
-    //    }
-    //}
 }
 
 repositories {

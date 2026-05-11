@@ -16,4 +16,5 @@ export const IMAGE_STYLES = [
   { id: 'oil_painting', label: 'Oil Painting', description: 'Classic, textured feel' },
   { id: 'sketch', label: 'Pencil Sketch', description: 'Hand-drawn charcoal look' },
   { id: 'origami', label: 'Origami & Paper', description: 'Folded paper and dioramas' },
+  { id: 'photo_realistic', label: 'Photo Realistic', description: 'Lifelike, high-definition photography' },
 ];
